@@ -13,64 +13,61 @@
 #   savethemblobs.py 0x000000F4A913BD0F iPhone3,1 --overwrite
 #   savethemblobs.py 1050808663311 n90ap --skip-cydia
 
-import sys, os, argparse
-import requests
+# from __future__ import print_function  # uncomment and then fix all print statements
+
+import argparse
 import json
+import os
+import requests
+import sys
+import urlparse
 
 __version__ = '2.1'
 
-USER_AGENT = 'savethemblobs/%s' % __version__
+headers = {'User-Agent': 'savethemblobs/%s' % __version__}
 
 def firmwares_being_signed(device):
 	url = 'http://api.ineal.me/tss/%s/' % (device)
-	r = requests.get(url, headers={'User-Agent': USER_AGENT})
-	return r.text
+	return requests.get(url, headers=headers).text
 
 def firmwares(device):
 	url = 'http://api.ineal.me/tss/%s/all' % (device)
-	r = requests.get(url, headers={'User-Agent': USER_AGENT})
-	return r.text
+	return requests.get(url, headers=headers).text
 
 def beta_firmwares(device):
 	url = 'http://api.ineal.me/tss/beta/%s/all' % (device)
-	r = requests.get(url, headers={'User-Agent': USER_AGENT})
-	return r.text
+	return requests.get(url, headers=headers).text
 
 def tss_request_manifest(board, build, ecid, cpid=None, bdid=None):
 	url = 'http://api.ineal.me/tss/manifest/%s/%s' % (board, build)
-	r = requests.get(url, headers={'User-Agent': USER_AGENT})
+	r = requests.get(url, headers=headers)
 	return r.text.replace('<string>$ECID$</string>', '<integer>%s</integer>' % (ecid))
 
 def request_blobs_from_apple(board, build, ecid, cpid=None, bdid=None):
 	url = 'http://gs.apple.com/TSS/controller?action=2'
-	r = requests.post(url, headers={'User-Agent': USER_AGENT}, data=tss_request_manifest(board, build, ecid, cpid, bdid))
+	r = requests.post(url, headers=headers, data=tss_request_manifest(board, build, ecid, cpid, bdid))
 	if not r.status_code == requests.codes.ok:
 		return { 'MESSAGE': 'TSS HTTP STATUS:', 'STATUS': r.status_code }
 	return parse_tss_response(r.text)
 
 def request_blobs_from_cydia(board, build, ecid, cpid=None, bdid=None):
 	url = 'http://cydia.saurik.com/TSS/controller?action=2'
-	r = requests.post(url, headers={'User-Agent': USER_AGENT}, data=tss_request_manifest(board, build, ecid, cpid, bdid))
+	r = requests.post(url, headers=headers, data=tss_request_manifest(board, build, ecid, cpid, bdid))
 	if not r.status_code == requests.codes.ok:
 		return { 'MESSAGE': 'TSS HTTP STATUS:', 'STATUS': r.status_code }
 	return parse_tss_response(r.text)
 
 def submit_blobs_to_cydia(cpid, bdid, ecid, data):
 	url = 'http://cydia.saurik.com/tss@home/api/store/%s/%s/%s' % (cpid, bdid, ecid)
-	r = requests.post(url, headers={'User-Agent': USER_AGENT}, data=data)
+	r = requests.post(url, headers=headers, data=data)
 	return r.status_code == requests.codes.ok
 
 def write_to_file(file_path, data):
-	f = open(file_path, 'w')
-	f.write(data)
-	f.close()
+	with open(file_path, 'w') as out_file:
+	    out_file.write(data)
 
 def parse_tss_response(response):
-	ret = {}
-	for v in response.split('&'):
-		r = v.split('=',1)
-		ret[r[0]] = r[1]
-	return ret
+	return {key: value for key, value in urlparse.parse_qsl(response)}
 
 def parse_args():
 	parser = argparse.ArgumentParser()
@@ -84,18 +81,11 @@ def parse_args():
 	parser.add_argument('--cydia-blobs', help='fetch blobs from Cydia server (32 bit devices only)', action='store_true')
 	return parser.parse_args()
 
-def main(passedArgs = None):
-
-	if passedArgs:
-		args = passedArgs
-	else:
-		args = parse_args()
-
+def main(passedArgs=None):
+	args = passedArgs or parse_args()
 	ecid = int(args.ecid, 0)
-
 	if not os.path.exists(args.save_dir):
 		os.makedirs(args.save_dir)
-
 	print 'Fetching firmwares Apple is currently signing for %s' % (args.device)
 	d = firmwares_being_signed(args.device)
 	if not d:
