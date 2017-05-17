@@ -5,9 +5,9 @@ Easily save/manage SHSH blobs from Apple and Cydia
 
 iOS Port of [Savethemblobs](https://www.github.com/iApeiron/savethemblobs)
 
-Based on omz’s opensource [Python Framework](https://github.com/omz/PythonistaAppTemplate)
+Based on omz’s opensource [PythonistaApp Template](https://github.com/omz/PythonistaAppTemplate)
 
-Thanks to [ccclauss](https://github.com/cclauss) for help with main.py
+Thanks to [cclauss](https://github.com/cclauss) for help with main.py
 
 This is currently a working beta.
 
