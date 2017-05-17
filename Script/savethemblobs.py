@@ -1,5 +1,5 @@
-#!/usr/bin/env python
-#
+#!/usr/bin/env python2
+# -*- coding: utf-8 -*-
 # savethemblobs.py
 #   A simple script to grab all SHSH blobs from Apple that it's currently signing to save them locally and on Cydia server.
 #   And now also grabs blobs already cached on Cydia servers to save them locally.
@@ -13,14 +13,15 @@
 #   savethemblobs.py 0x000000F4A913BD0F iPhone3,1 --overwrite
 #   savethemblobs.py 1050808663311 n90ap --skip-cydia
 
-# from __future__ import print_function  # uncomment and then fix all print statements
-
+from __future__ import absolute_import
+from __future__ import print_function
 import argparse
 import json
 import os
 import requests
 import sys
 import urlparse
+import six
 
 __version__ = '2.1'
 
@@ -86,12 +87,12 @@ def main(passedArgs=None):
 	ecid = int(args.ecid, 0)
 	if not os.path.exists(args.save_dir):
 		os.makedirs(args.save_dir)
-	print 'Fetching firmwares Apple is currently signing for %s' % (args.device)
+	print('Fetching firmwares Apple is currently signing for %s' % (args.device))
 	d = firmwares_being_signed(args.device)
 	if not d:
-		print 'ERROR: No firmwares found! Invalid device.'
+		print('ERROR: No firmwares found! Invalid device.')
 		return 1
-	for device in json.loads(d).itervalues():
+	for device in six.itervalues(json.loads(d)):
 		board = device['board']
 		model = device['model']
 		cpid = device['cpid']
@@ -100,30 +101,30 @@ def main(passedArgs=None):
 			save_path = os.path.join(args.save_dir, '%s-%s-%s-%s.shsh' % (ecid, model, f['version'], f['build']))
 
 			if not os.path.exists(save_path) or args.overwrite_apple or args.overwrite:
-				print 'Requesting blobs from Apple for %s/%s' % (model, f['build'])
+				print('Requesting blobs from Apple for %s/%s' % (model, f['build']))
 				r = request_blobs_from_apple(board, f['build'], ecid, cpid, bdid)
 
 				if r['MESSAGE'] == 'SUCCESS':
-					print 'Fresh blobs saved to %s' % (save_path)
+					print('Fresh blobs saved to %s' % (save_path))
 					write_to_file(save_path, r['REQUEST_STRING'])
 
 					if not args.no_submit_cydia:
-						print 'Submitting blobs to Cydia server'
+						print('Submitting blobs to Cydia server')
 						submit_blobs_to_cydia(cpid, bdid, ecid, r['REQUEST_STRING'])
 
 				else:
-					print 'Error receiving blobs: %s [%s]' % (r['MESSAGE'], r['STATUS'])
+					print('Error receiving blobs: %s [%s]' % (r['MESSAGE'], r['STATUS']))
 
 			else:
-				print 'Blobs already exist at %s' % (save_path)
+				print('Blobs already exist at %s' % (save_path))
 
 	if args.cydia_blobs:
-		print 'Fetching blobs available on Cydia server'
+		print('Fetching blobs available on Cydia server')
 		g = firmwares(args.device)
 		if not g:
-			print 'ERROR: No firmwares found! Invalid device.'
+			print('ERROR: No firmwares found! Invalid device.')
 			return 1
-		for device in json.loads(g).itervalues():
+		for device in six.itervalues(json.loads(g)):
 			board = device['board']
 			model = device['model']
 			cpid = device['cpid']
@@ -136,21 +137,21 @@ def main(passedArgs=None):
 					r = request_blobs_from_cydia(board, b['build'], ecid, cpid, bdid)
 
 					if r['MESSAGE'] == 'SUCCESS':
-						print 'Cydia blobs saved to %s' % (save_path)
+						print('Cydia blobs saved to %s' % (save_path))
 						write_to_file(save_path, r['REQUEST_STRING'])
 
 					#else:
 						#print 'No blobs found for %s' % (b['build'])
 
 				else:
-					print 'Blobs already exist at %s' % (save_path)
+					print('Blobs already exist at %s' % (save_path))
 
 		#print 'Fetching beta blobs available on Cydia server'
 		h = beta_firmwares(args.device)
 		if not h:
-			print 'ERROR: No firmwares found! Invalid device.'
+			print('ERROR: No firmwares found! Invalid device.')
 			return 1
-		for device in json.loads(h).itervalues():
+		for device in six.itervalues(json.loads(h)):
 			board = device['board']
 			model = device['model']
 			cpid = device['cpid']
@@ -163,19 +164,20 @@ def main(passedArgs=None):
 					r = request_blobs_from_cydia(board, c['build'], ecid, cpid, bdid)
 
 					if r['MESSAGE'] == 'SUCCESS':
-						print 'Cydia blobs saved to %s' % (save_path)
+						print('Cydia blobs saved to %s' % (save_path))
 						write_to_file(save_path, r['REQUEST_STRING'])
 
 					#else:
 						#print 'No blobs found for %s' % (c['build'])
 
 				else:
-					print 'Blobs already exist at %s' % (save_path)
+					print('Blobs already exist at %s' % (save_path))
 
 	else:
-		print 'Skipped fetching blobs from Cydia server'
+		print('Skipped fetching blobs from Cydia server')
 
 	return 0
 
 if __name__ == '__main__':
 	sys.exit(main())
+
